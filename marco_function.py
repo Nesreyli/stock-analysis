@@ -6,6 +6,7 @@ import requests
 # data within function replacing "NYSE" with the desired exchange. 
 # I have not yet found a way to call the exchange data within 
 # the function without hardcoding the exchange name, but I will continue to work on it. 
+#test
 def get_exchange_data(key):
     """
     returns metadata for a specific exchange
