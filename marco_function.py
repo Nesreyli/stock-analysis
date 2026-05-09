@@ -1,28 +1,86 @@
+import datetime as dt
+from eod import EodHistoricalData
 import json
+import os 
 import pandas as pd
 import requests
 
-# File works locally for personal key and must call its own exchange 
-# data within function replacing "NYSE" with the desired exchange. 
-# I have not yet found a way to call the exchange data within 
-# the function without hardcoding the exchange name, but I will continue to work on it. 
-#test
-def get_exchange_data(key):
+DEFAULT_DATE = dt.date.today() - dt.timedelta(396)
+TODAY = dt.date.today()
+
+# Function works with any key that has access to EOHD_API calling its own exchange through api_token
+# Returns a dataframe with metadata for the exchange table 
+def get_exchange_data(key, exchange="NYSE"):
     """
-    returns metadata for a specific exchange
+    Returns metadata for a specific exchange
     available: US, NASDAQ, OTCBB, PINK, BATS
     """
-    endpoint = f"https://eodhd.com/api/exchange-symbol-list/NYSE?api_token=69fcb2e0ef9372.85557703&fmt=json"
+    endpoint = f"https://eodhd.com/api/exchange-symbol-list/{exchange}?api_token={key}&fmt=json"
     print("Downloading data")
     call = requests.get(endpoint).text
     exchange_data = pd.DataFrame(json.loads(call))
     print("Completed")
     return exchange_data
 
+def get_security_type(exchange_data, type="Common Stock"):
+    """"
+    Returns a list of filtered security types
+    Types avaliable: Common Stock, ETF, Fund, Prefered Stocks
+    """
+    symbols = exchange_data[exchange_data.Type == type]
+    return symbols.Code.to_list()
+
+def get_sp(symbol = True, sector = False):
+    """
+    Returns S&P 500 metadata 
+    Sectors: Communication Services, Consumer Discretionary, Consumer Staples, 
+    Energy, Financials, Health Care, Industrials, Information Technology, 
+    Materials, Real Estate, Utilities
+    """
+    sp = pd.read_csv("sp500.csv")
+    if sector:
+        sp = sp[sp.Sector == sector]
+    if symbol:
+        return sp["Symbol"]
+    else:
+        return sp
+
+def get_data(*tickers, key, path = 'data_file', date=DEFAULT_DATE):
+    """
+    Downloads and stores as csv price data for selected securities 
+    Skips
+    """
+    if not os.path.exists(f"{os.getcwd()}/{path}"):
+        os.mkdir(path)
+    downloaded = 0
+    skipped = 0
+    tickers_skipped = []
+
+    client = EodHistoricalData(key)
+    for ticker in tickers:
+        try:
+            print(f"Downloading {ticker}")
+            df = pd.DataFrame(client.get_prices_eod(ticker, from_=date))
+            df.index = pd.DatetimeIndex(df.date)
+            df.drop(columns=['date'], inplace=True)
+            df.to_csv(f"{path}/{ticker}.csv")
+            downloaded += 1
+        except:
+            print(f"{ticker} not found, skipping...")
+            skipped += 1
+            tickers_skipped.append(ticker)
+    print("Download completed")
+    print(f"Data download for {downloaded} securities")
+    print(f"{skipped} tickers skipped")
+    if tickers_skipped:
+        print(" Tickers skipped ".center(30, "="))
+        for ticker in tickers_skipped:
+            print(ticker)     
 def main():
     key = open('api_token.txt').read()
-    print(get_exchange_data(key))
-
+    #print(get_security_type(get_exchange_data(key)))
+    energy = get_sp(symbol=True, sector='Energy')
+    get_data("APPL", "GOOG", key= key, path= 'mine')
 
 if __name__ == '__main__':
     main()
