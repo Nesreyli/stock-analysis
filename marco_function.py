@@ -37,7 +37,7 @@ def get_sp(symbol = True, sector = False):
     Energy, Financials, Health Care, Industrials, Information Technology, 
     Materials, Real Estate, Utilities
     """
-    sp = pd.read_csv("sp500.csv")
+    sp = pd.read_csv("funny.csv", encoding="latin-1")
     if sector:
         sp = sp[sp.Sector == sector]
     if symbol:
@@ -80,7 +80,7 @@ def main():
     key = open('api_token.txt').read()
     #print(get_security_type(get_exchange_data(key)))
     energy = get_sp(symbol=True, sector='Energy')
-    get_data("APPL", "GOOG", key= key, path= 'health care')
+    get_data(*energy, key=key, path='energy')
 
 if __name__ == '__main__':
     main()
