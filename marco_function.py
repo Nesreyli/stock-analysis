@@ -80,7 +80,7 @@ def main():
     key = open('api_token.txt').read()
     #print(get_security_type(get_exchange_data(key)))
     energy = get_sp(symbol=True, sector='Energy')
-    get_data("APPL", "GOOG", key= key, path= 'mine')
+    get_data("APPL", "GOOG", key= key, path= 'health care')
 
 if __name__ == '__main__':
     main()
